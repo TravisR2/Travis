@@ -1,0 +1,90 @@
+def initialize(context):
+    context.security = sid(24)
+    set_benchmark(sid(24))
+    
+    schedule_function(open_positions, date_rules.every_day(), time_rules.market_open(hours=3))
+    
+    set_slippage(slippage.VolumeShareSlippage(volume_limit=0.025, price_impact=0.1))
+
+def open_positions(context, data):
+    order_target_percent(context.security, 0) or          order_target_percent(context.security, 1) or order_target_percent(context.security, -1)
+        
+    current_price = data.current(context.security, 'price')
+    current_positions = context.portfolio.positions[sid(24)].amount
+    cash = context.portfolio.cash
+    current_returns = context.portfolio.returns
+    current_returns_percentage = ((context.portfolio.portfolio_value-context.portfolio.starting_cash)/context.portfolio.starting_cash)
+    
+    
+        
+    MA1 = price_hist = data.history(context.security, 'close', 6, '1d')[:-1].mean()
+    MA2 = price_hist = data.history(context.security, 'close', 21, '1d')[:-1].mean()
+    
+    open_orders = get_open_orders(context.security)
+   
+            
+    if (current_price == MA1):
+        if context.security not in open_orders:
+         order_target_percent(context.security, 0)
+         log.info('Price == MA1 taking no position no discernible price direction until it is actually above or below')
+        
+    elif (current_price == MA2):
+        if context.security not in open_orders:
+         order_target_percent(context.security, 0)
+         log.info('Price == MA2 taking no position no discernible price direction until it is actually above or below')
+   
+    elif (MA1 == MA2):
+        if context.security not in open_orders:
+         order_target_percent(context.security, 0)
+         log.info('MA1 == MA2 taking no position no discernible price direction until it is actually above or below')
+
+
+
+
+
+
+    elif (current_price > MA1) and (current_price > MA2) and (MA1 > MA2):
+        if context.security not in open_orders:
+         order_target_percent(context.security, 1)
+         log.info('Buying Shares #1 when price is greater than trailing averages and 5day is also greater than 20day possibly indicating short term upward momentum or continued upward momentum')
+            
+    
+        
+    elif (current_price > MA1) and (current_price > MA2) and (MA1 < MA2):
+        if context.security not in open_orders:
+         order_target_percent(context.security, 1)
+         log.info('Buying Shares #2 when price is greater than trailing averages and 20day is also greater than 5day possibly indicating upward momentum but also could indicate slowing upward momentum')
+        
+    
+    
+    elif (current_price < MA1) and (current_price > MA2) and (MA1 > MA2):
+        if context.security not in open_orders:
+         order_target_percent(context.security, 0)
+         log.info('No Position #1 taking no position when price is bouncing in between trailing averages to avoid unecessary losses. Also to add stability to algorithms returns when price has not really had any confirmed directional momentum by breaking above or below trailing avgs.')
+        
+    elif (current_price < MA1) and (current_price < MA2) and (MA1 > MA2):
+        if context.security not in open_orders:
+         order_target_percent(context.security, -1)
+         log.info('Shorting Shares #1 when price is below both trailing averages and  5day is greater than 20day could be indicating short term downturn in price which could continue further downward or could possibly be just a quick dip')
+        
+    
+    
+    
+    elif (current_price > MA1) and (current_price < MA2) and (MA1 < MA2):
+        if context.security not in open_orders:
+         order_target_percent(context.security, 0)
+         log.info('No Position #2 taking no position when price is bouncing in between trailing averages to avoid unecessary losses. Also to add stability to algorithms returns when price has not really had any confirmed directional momentum by breaking above or below trailing avgs.')
+            
+    
+    elif (current_price < MA1) and (current_price < MA2) and (MA1 < MA2):
+        if context.security not in open_orders:
+         order_target_percent(context.security, -1)
+         log.info('Shorting Shares #2 when price is below both trailing averages and  20day is greater than 5day could be indicating longer term downturn in price which could continue further downward')
+    
+    
+            
+    
+            
+        
+        
+    record(MA1 = MA1, MA2 = MA2, Price = current_price, Leverage = context.account.leverage)
